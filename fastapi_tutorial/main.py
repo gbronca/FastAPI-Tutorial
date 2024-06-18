@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
-
 from typing import Annotated
+
+from fastapi import FastAPI, Path, Query
+from pydantic import BaseModel
 
 
 class Item(BaseModel):
@@ -46,7 +46,8 @@ async def update_item(item_id: int, item: Item, q: str | None = None):
 @app.get("/items/")
 async def read_items(
     q: Annotated[
-        str | None, Query(min_length=3, max_length=50, pattern="^fixedquery$")
+        str | None,
+        Query(min_length=3, max_length=50, pattern="^fixedquery$"),
     ] = None,
 ):
     results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
@@ -127,3 +128,16 @@ async def read_items_hidden(
         return {"hidden_query": hidden_query}
     else:
         return {"hidden_query": "Not found"}
+
+
+@app.get("/items/{item_id}")
+async def read_items_path(
+    *,
+    item_id: Annotated[int, Path(title="The ID of the item to get", ge=1, le=1000)],
+    q: Annotated[str | None, Query(alias="item-query")] = None,
+    size: Annotated[float, Query(gt=0, lt=10.5)],
+):
+    results = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
